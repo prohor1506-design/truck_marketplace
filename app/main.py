@@ -56,6 +56,11 @@ async def main():
         from aiogram.fsm.storage.memory import MemoryStorage
         from aiogram.client.default import DefaultBotProperties
         
+        # Создаем движок БД для middleware
+        from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
+        engine = create_async_engine(config.DATABASE_URL, echo=config.DATABASE_ECHO)
+        session_maker = async_sessionmaker(engine, expire_on_commit=False)
+        
         # НОВЫЙ СПОСОБ для aiogram 3.7.0+
         bot = Bot(
             token=config.BOT_TOKEN,
@@ -63,11 +68,20 @@ async def main():
         )
         
         storage = MemoryStorage()
-        dp = Dispatcher(storage=storage)
+        dp = Dispatcher()
         
-        # Регистрируем хендлеры
+        # Регистрируем middleware для работы с БД
+        from app.presentation.middleware import DatabaseMiddleware
+        middleware = DatabaseMiddleware(session_pool=session_maker)
+        dp.update.middleware(middleware)
+        
+        # Регистрируем хендлеры пользователей
         from app.presentation.handlers.user_handlers import register_user_handlers
         register_user_handlers(dp)
+        
+        # Регистрируем хендлеры регистрации
+        from app.presentation.handlers.registration import router as registration_router
+        dp.include_router(registration_router)
         
         logger.info("✅ Бот инициализирован")
         
@@ -77,7 +91,7 @@ async def main():
             BotCommand(command="start", description="🚀 Запустить бота"),
             BotCommand(command="help", description="❓ Помощь"),
             BotCommand(command="profile", description="👤 Мой профиль"),
-            BotCommand(command="market", description="📊 Рынок заказов"),
+            BotCommand(command="register", description="📝 Регистрация"),
         ]
         await bot.set_my_commands(commands)
         

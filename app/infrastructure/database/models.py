@@ -63,6 +63,44 @@ class User(Base):
     
     def __repr__(self):
         return f"<User {self.telegram_id} ({self.role.value})>"
+    
+    def get_role_display(self):
+        """Получить читаемое название роли"""
+        role_display = {
+            UserRole.CUSTOMER: "👤 Заказчик",
+            UserRole.EXECUTOR: "🚚 Исполнитель",
+            UserRole.OWNER: "🏗️ Владелец техники",
+            UserRole.ADMIN: "⚡ Администратор"
+        }
+        return role_display.get(self.role, "Не указана")
+    
+    def get_full_name(self):
+        """Получить полное имя пользователя"""
+        if self.first_name and self.last_name:
+            return f"{self.first_name} {self.last_name}"
+        elif self.first_name:
+            return self.first_name
+        elif self.last_name:
+            return self.last_name
+        return "Не указано"
+    
+    def get_profile_info(self):
+        """Получить информацию для профиля"""
+        return (
+            f"<b>👤 Профиль пользователя</b>\n\n"
+            f"<b>ID:</b> {self.id}\n"
+            f"<b>Telegram ID:</b> {self.telegram_id}\n"
+            f"<b>Имя:</b> {self.get_full_name()}\n"
+            f"<b>Username:</b> @{self.username if self.username else 'нет'}\n"
+            f"<b>Роль:</b> {self.get_role_display()}\n"
+            f"<b>Телефон:</b> {self.phone if self.phone else 'не указан'}\n"
+            f"<b>Email:</b> {self.email if self.email else 'не указан'}\n"
+            f"<b>Баланс:</b> {self.balance} ₽\n"
+            f"<b>Рейтинг:</b> {self.rating} ⭐\n"
+            f"<b>Статус:</b> {'✅ Активен' if self.is_active else '❌ Неактивен'}\n"
+            f"<b>Верификация:</b> {'✅ Да' if self.is_verified else '❌ Нет'}\n"
+            f"<b>Дата регистрации:</b> {self.created_at.strftime('%d.%m.%Y %H:%M')}\n"
+        )
 
 
 class Equipment(Base):
@@ -88,6 +126,31 @@ class Equipment(Base):
     
     def __repr__(self):
         return f"<Equipment {self.name} ({self.type.value})>"
+    
+    def get_type_display(self):
+        """Получить читаемое название типа техники"""
+        type_display = {
+            EquipmentType.TRUCK: "🚚 Грузовик",
+            EquipmentType.SPECIAL: "🏗️ Спецтехника",
+            EquipmentType.TRAILER: "🚛 Прицеп",
+            EquipmentType.CRANE: "🏗️ Кран",
+            EquipmentType.EXCAVATOR: "🔨 Экскаватор"
+        }
+        return type_display.get(self.type, "Неизвестно")
+    
+    def get_info(self):
+        """Получить информацию о технике"""
+        return (
+            f"<b>🚛 {self.name}</b>\n\n"
+            f"<b>Тип:</b> {self.get_type_display()}\n"
+            f"<b>Владелец:</b> {self.owner.get_full_name() if self.owner else 'Неизвестно'}\n"
+            f"<b>Описание:</b> {self.description if self.description else 'нет'}\n"
+            f"<b>Грузоподъемность:</b> {self.capacity if self.capacity else 'не указана'} т\n"
+            f"<b>Местоположение:</b> {self.location if self.location else 'не указано'}\n"
+            f"<b>Цена в час:</b> {self.price_per_hour if self.price_per_hour else 'не указана'} ₽/час\n"
+            f"<b>Цена в сутки:</b> {self.price_per_day if self.price_per_day else 'не указана'} ₽/сутки\n"
+            f"<b>Статус:</b> {'✅ Доступна' if self.is_available else '❌ Занята'}\n"
+        )
 
 
 class Order(Base):
@@ -117,6 +180,34 @@ class Order(Base):
     
     def __repr__(self):
         return f"<Order {self.title} ({self.status.value})>"
+    
+    def get_status_display(self):
+        """Получить читаемое название статуса"""
+        status_display = {
+            OrderStatus.CREATED: "📝 Создан",
+            OrderStatus.SEARCHING: "🔍 В поиске исполнителя",
+            OrderStatus.IN_PROGRESS: "🚚 В работе",
+            OrderStatus.COMPLETED: "✅ Завершен",
+            OrderStatus.CANCELLED: "❌ Отменен"
+        }
+        return status_display.get(self.status, "Неизвестно")
+    
+    def get_info(self):
+        """Получить информацию о заказе"""
+        return (
+            f"<b>📦 Заказ: {self.title}</b>\n\n"
+            f"<b>Описание:</b> {self.description if self.description else 'нет'}\n"
+            f"<b>Тип груза:</b> {self.cargo_type}\n"
+            f"<b>Маршрут:</b> {self.from_location} → {self.to_location}\n"
+            f"<b>Вес:</b> {self.weight if self.weight else 'не указан'} т\n"
+            f"<b>Объем:</b> {self.volume if self.volume else 'не указан'} м³\n"
+            f"<b>Расстояние:</b> {self.distance if self.distance else 'не указано'} км\n"
+            f"<b>Цена:</b> {self.price if self.price else 'не указана'} ₽\n"
+            f"<b>Статус:</b> {self.get_status_display()}\n"
+            f"<b>Срок:</b> {self.deadline.strftime('%d.%m.%Y') if self.deadline else 'не указан'}\n"
+            f"<b>Заказчик:</b> {self.customer.get_full_name() if self.customer else 'Неизвестно'}\n"
+            f"<b>Создан:</b> {self.created_at.strftime('%d.%m.%Y %H:%M')}\n"
+        )
 
 
 class Offer(Base):
@@ -139,6 +230,28 @@ class Offer(Base):
     
     def __repr__(self):
         return f"<Offer for Order {self.order_id} by {self.executor_id}>"
+    
+    def get_status_display(self):
+        """Получить читаемое название статуса"""
+        status_display = {
+            "pending": "⏳ Ожидает рассмотрения",
+            "accepted": "✅ Принят",
+            "rejected": "❌ Отклонен"
+        }
+        return status_display.get(self.status, "Неизвестно")
+    
+    def get_info(self):
+        """Получить информацию о предложении"""
+        return (
+            f"<b>💼 Предложение #{self.id}</b>\n\n"
+            f"<b>К заказу:</b> {self.order.title if self.order else 'Неизвестно'}\n"
+            f"<b>Исполнитель:</b> {self.executor.get_full_name() if self.executor else 'Неизвестно'}\n"
+            f"<b>Предложенная цена:</b> {self.price} ₽\n"
+            f"<b>Сообщение:</b> {self.message if self.message else 'нет'}\n"
+            f"<b>Техника:</b> {self.equipment.name if self.equipment else 'не указана'}\n"
+            f"<b>Статус:</b> {self.get_status_display()}\n"
+            f"<b>Создано:</b> {self.created_at.strftime('%d.%m.%Y %H:%M')}\n"
+        )
 
 
 class Review(Base):
@@ -160,3 +273,19 @@ class Review(Base):
     
     def __repr__(self):
         return f"<Review {self.rating}/5 by {self.author_id}>"
+    
+    def get_stars(self):
+        """Получить звездочки для рейтинга"""
+        return "⭐" * self.rating
+    
+    def get_info(self):
+        """Получить информацию об отзыве"""
+        return (
+            f"<b>📝 Отзыв #{self.id}</b>\n\n"
+            f"<b>К заказу:</b> {self.order.title if self.order else 'Неизвестно'}\n"
+            f"<b>От:</b> {self.author.get_full_name() if self.author else 'Неизвестно'}\n"
+            f"<b>Для:</b> {self.target.get_full_name() if self.target else 'Неизвестно'}\n"
+            f"<b>Оценка:</b> {self.get_stars()} ({self.rating}/5)\n"
+            f"<b>Комментарий:</b> {self.comment if self.comment else 'нет'}\n"
+            f"<b>Дата:</b> {self.created_at.strftime('%d.%m.%Y %H:%M')}\n"
+        )

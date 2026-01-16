@@ -7,6 +7,7 @@ from aiogram.types import Message, ReplyKeyboardMarkup, KeyboardButton
 from aiogram.filters import Command, CommandStart
 
 from app.shared.logger import logger
+from app.presentation.keyboards import get_main_keyboard
 
 
 def register_user_handlers(dp):
@@ -14,27 +15,26 @@ def register_user_handlers(dp):
     router = Router()
     
     @router.message(CommandStart())
-    async def cmd_start(message: Message):
+    async def cmd_start(message: Message, user=None):
         """Обработка команды /start"""
-        logger.info(f"Новый пользователь: {message.from_user.id}")
+        logger.info(f"Пользователь запустил бота: {message.from_user.id}")
         
-        # Создаем клавиатуру
-        keyboard = ReplyKeyboardMarkup(
-            keyboard=[
-                [KeyboardButton(text="👤 Мой профиль")],
-                [KeyboardButton(text="📊 Рынок заказов"), KeyboardButton(text="🚛 Моя техника")],
-                [KeyboardButton(text="➕ Создать заказ"), KeyboardButton(text="🔍 Найти заказ")],
-            ],
-            resize_keyboard=True,
-            one_time_keyboard=False
-        )
-        
-        await message.answer(
+        welcome_text = (
             "🚚 Добро пожаловать в <b>Truck Marketplace</b>!\n\n"
             "<i>Биржа грузоперевозок и спецтехники</i>\n\n"
-            "Выберите действие:",
-            reply_markup=keyboard,
-            parse_mode="HTML"
+            "Используйте команды:\n"
+            "/register - 📝 Регистрация в системе\n"
+            "/profile - 👤 Просмотр профиля\n"
+            "/help - ❓ Помощь и инструкции"
+        )
+        
+        if user and user.role:
+            welcome_text += f"\n\n✅ Вы зарегистрированы как: {user.get_role_display()}"
+        
+        await message.answer(
+            welcome_text,
+            parse_mode="HTML",
+            reply_markup=get_main_keyboard()
         )
     
     @router.message(Command("help"))
@@ -47,47 +47,41 @@ def register_user_handlers(dp):
         /start - Запустить бота
         /help - Эта справка
         /profile - Мой профиль
+        /register - Регистрация в системе
         
-        <b>Для заказчиков:</b>
-        • Создать заказ на перевозку
-        • Найти исполнителя
-        • Управлять своими заказами
+        <b>Для зарегистрированных пользователей:</b>
+        • Создавайте и ищите заказы
+        • Управляйте профилем
+        • Взаимодействуйте с другими участниками
         
-        <b>Для исполнителей:</b>
-        • Найти заказы
-        • Откликнуться на заказ
-        • Управлять техникой
-        
-        <b>Для владельцев техники:</b>
-        • Добавить технику в аренду
-        • Управлять арендой
-        
-        <i>Выберите роль в меню или используйте кнопки ниже.</i>
+        <i>Для начала работы выполните /register</i>
         """
         
         await message.answer(help_text, parse_mode="HTML")
     
     @router.message(Command("profile"))
-    async def cmd_profile(message: Message):
+    async def cmd_profile(message: Message, user=None):
         """Обработка команды /profile"""
-        user = message.from_user
+        if not user or not user.role:
+            await message.answer(
+                "👤 <b>Профиль не заполнен</b>\n\n"
+                "Используйте /register для регистрации в системе.",
+                parse_mode="HTML"
+            )
+            return
         
-        profile_text = f"""
-        <b>👤 Ваш профиль</b>
+        # Используем метод get_profile_info из модели User
+        profile_text = user.get_profile_info()
         
-        <b>ID:</b> {user.id}
-        <b>Имя:</b> {user.first_name or ''} {user.last_name or ''}
-        <b>Username:</b> @{user.username if user.username else 'не установлен'}
-        
-        <i>Профиль еще не заполнен. Используйте кнопки для настройки.</i>
-        """
-        
-        await message.answer(profile_text, parse_mode="HTML")
+        await message.answer(
+            profile_text,
+            parse_mode="HTML"
+        )
     
     @router.message(F.text == "👤 Мой профиль")
-    async def btn_profile(message: Message):
+    async def btn_profile(message: Message, user=None):
         """Обработка кнопки профиля"""
-        await cmd_profile(message)
+        await cmd_profile(message, user)
     
     @router.message(F.text == "📊 Рынок заказов")
     async def btn_market(message: Message):
